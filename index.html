@@ -535,6 +535,65 @@ const FLOW = [
 
 const TIME_MAP = { regret:"过去", fear:"未来", waiting:"等待" };
 
+// ===== 呼吸音效引擎 (Web Audio API) =====
+class BreathAudio {
+  constructor() {
+    this.ctx = null;
+    this.osc = null;
+    this.gain = null;
+    this.playing = false;
+  }
+
+  init() {
+    if (this.ctx) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    this.gain = this.ctx.createGain();
+    this.gain.gain.value = 0;
+    this.gain.connect(this.ctx.destination);
+  }
+
+  // 吸气：音调稍高，音量渐强
+  inhale() {
+    this.init();
+    if (this.playing) return;
+    this.playing = true;
+    this._playTone(256, 1.5);  // C4 附近，柔和
+  }
+
+  // 呼气：音调稍低，音量渐弱
+  exhale() {
+    this.init();
+    if (this.playing) return;
+    this.playing = true;
+    this._playTone(220, 1.5);  // A3 附近，低一点
+  }
+
+  _playTone(freq, duration) {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.08, now + 0.3);  // 轻柔
+    g.gain.linearRampToValueAtTime(0.08, now + duration - 0.3);
+    g.gain.linearRampToValueAtTime(0, now + duration);
+    osc.connect(g);
+    g.connect(this.gain);
+    osc.start(now);
+    osc.stop(now + duration);
+    osc.onended = () => { this.playing = false; };
+  }
+
+  stop() {
+    if (this.gain) this.gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
+    this.playing = false;
+  }
+}
+
+const breathAudio = new BreathAudio();
+
 // ===== 话头引擎 =====
 function pickHuatou(sceneId) {
   if (sceneId === 'free') {
@@ -648,6 +707,21 @@ function runFlow(stepIndex, huatouText) {
   progressEl.style.width = ((elapsed / totalDuration) * 100) + '%';
 
   if (step.breath) {
+    // 呼吸音效 - 交替吸气/呼气
+    breathAudio.init();
+    const breathStart = Date.now();
+    const breathInterval = setInterval(() => {
+      const elapsed = (Date.now() - breathStart) / 1000;
+      if (elapsed >= step.duration) { clearInterval(breathInterval); return; }
+      if (Math.floor(elapsed * 2) % 2 === 0) {
+        breathAudio.inhale();
+      } else {
+        breathAudio.exhale();
+      }
+    }, 500);
+    // 步骤结束时清除
+    window._breathInterval = breathInterval;
+
     // 呼吸动画
     const circle = document.createElement('div');
     circle.className = 'breath-circle';
@@ -716,6 +790,8 @@ function runFlow(stepIndex, huatouText) {
 
     if (remaining <= 0) {
       clearInterval(timerInterval);
+      clearInterval(window._breathInterval);
+      breathAudio.stop();
       countdownEl.textContent = '';
       // 淡出当前步骤
       contentEl.style.opacity = '0';
@@ -730,6 +806,8 @@ function runFlow(stepIndex, huatouText) {
 
 function finishPractice() {
   clearInterval(timerInterval);
+  clearInterval(window._breathInterval);
+  breathAudio.stop();
   saveRecord(currentScene, currentHuatouId);
 
   const streak = getStreak();
