@@ -200,9 +200,9 @@
   }
 
   .breath-label {
-    font-size: 0.85rem;
-    color: var(--mist);
-    letter-spacing: 0.3em;
+    font-size: 2.2rem;
+    color: var(--ink);
+    text-align: center;
   }
 
   @keyframes breathe {
@@ -210,6 +210,10 @@
     50% { transform: scale(1.2); opacity: 1; }
   }
 
+  
+    46%, 95% { opacity: 0; }
+    96%, 100% { opacity: 1; }
+  }
 
   /* 进度条 */
   .progress {
@@ -529,86 +533,6 @@ const FLOW = [
 
 const TIME_MAP = { regret:"过去", fear:"未来", waiting:"等待" };
 
-// ===== 呼吸音效引擎 (Web Audio API) =====
-// 多层泛音叠加，模拟寺庙钟声 / singing bowl
-  constructor() {
-    this.ctx = null;
-    this.timer = null;
-  }
-
-  init() {
-    if (this.ctx) { try { this.ctx.resume(); } catch(e){} return; }
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-
-  // 播放一声钟声：多层泛音叠加，像 singing bowl / 寺庙钟
-  playBell() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    const master = this.ctx.createGain();
-    master.gain.setValueAtTime(0.07, now); // 整体音量
-    master.gain.exponentialRampToValueAtTime(0.001, now + 3);
-    master.connect(this.ctx.destination);
-
-    // 钟声泛音列（基频 + 泛音，幅度递减）
-    const overtones = [
-      { freq: 220, gain: 0.5 },   // A3 基音
-      { freq: 440, gain: 0.3 },   // A4
-      { freq: 660, gain: 0.18 },  // E5
-      { freq: 880, gain: 0.1 },   // A5
-      { freq: 1100, gain: 0.06 }, // C#6（不太和谐的泛音，增加"金属感"）
-      { freq: 1320, gain: 0.03 }, // E6
-    ];
-
-    overtones.forEach(({ freq, gain }) => {
-      const osc = this.ctx.createOscillator();
-      const g = this.ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(gain, now + 0.02);  // 快速起音
-      // 各泛音衰减速度不同，低音持续更久
-      const decay = freq <= 220 ? 3 : freq <= 440 ? 2.5 : 1.8;
-      g.gain.exponentialRampToValueAtTime(0.001, now + decay);
-      osc.connect(g);
-      g.connect(master);
-      osc.start(now);
-      osc.stop(now + decay + 0.1);
-    });
-
-    // 金属质感：轻微噪声脉冲（撞击感）
-    const bufLen = this.ctx.sampleRate * 0.05;
-    const buf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < bufLen; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufLen * 0.15));
-    }
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buf;
-    const noiseGain = this.ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.04, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-    noise.connect(noiseGain);
-    noiseGain.connect(master);
-    noise.start(now);
-  }
-
-  // 开始呼吸引导：每 4 秒提示一次
-  start() {
-    this.init();
-    if (this.timer) return;
-    this.playBell(); // 立即响第一声
-    this.timer = setInterval(() => this.playBell(), 4000);
-  }
-
-  stop() {
-    if (this.timer) { clearInterval(this.timer); this.timer = null; }
-  }
-}
-
-
-
-
 // ===== 话头引擎 =====
 function pickHuatou(sceneId) {
   if (sceneId === 'free') {
@@ -722,21 +646,7 @@ function runFlow(stepIndex, huatouText) {
   progressEl.style.width = ((elapsed / totalDuration) * 100) + '%';
 
   if (step.breath) {
-    // 呼吸音效 - 交替吸气/呼气
-    const breathStart = Date.now();
-    const breathInterval = setInterval(() => {
-      const elapsed = (Date.now() - breathStart) / 1000;
-      if (elapsed >= step.duration) { clearInterval(breathInterval); return; }
-      if (Math.floor(elapsed * 2) % 2 === 0) {
-      } else {
-      }
-    }, 500);
-    // 步骤结束时清除
-    window._breathInterval = breathInterval;
-
-    // 启动呼吸音效
-
-    // 呼吸动画：吸/呼文字循环切换，4秒一换
+    // 呼吸引导：吸/呼文字循环切换
     const circle = document.createElement('div');
     circle.className = 'breath-circle';
     const label = document.createElement('div');
@@ -745,12 +655,8 @@ function runFlow(stepIndex, huatouText) {
     circle.appendChild(label);
     contentEl.appendChild(circle);
 
-    // 圆圈初始状态
-    circle.style.transform = 'scale(1)';
     circle.style.transition = 'transform 3.8s ease-in-out';
-
-    // 每4秒切换吸/呼，圆圈配合缩放
-    let _bp = 0; // 0=吸 1=呼
+    let _bp = 0;
     window._breathTimer = setInterval(() => {
       _bp = 1 - _bp;
       label.textContent = _bp === 0 ? '吸' : '呼';
@@ -761,7 +667,7 @@ function runFlow(stepIndex, huatouText) {
     hint1.className = 'line';
     hint1.textContent = step.lines[0];
     contentEl.appendChild(hint1);
-    setTimeout(() => hint1.classList.add('visible'), 300);
+    setTimeout(() => hint1.classList.add('visible'), 200);
 
     const hint2 = document.createElement('div');
     hint2.className = 'line';
