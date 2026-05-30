@@ -203,7 +203,6 @@
     font-size: 0.85rem;
     color: var(--mist);
     letter-spacing: 0.3em;
-    animation: breathLabel 6s ease-in-out infinite;
   }
 
   @keyframes breathe {
@@ -211,11 +210,6 @@
     50% { transform: scale(1.2); opacity: 1; }
   }
 
-  @keyframes breathLabel {
-    0%, 45% { opacity: 1; }
-    46%, 95% { opacity: 0; }
-    96%, 100% { opacity: 1; }
-  }
 
   /* 进度条 */
   .progress {
@@ -537,7 +531,6 @@ const TIME_MAP = { regret:"过去", fear:"未来", waiting:"等待" };
 
 // ===== 呼吸音效引擎 (Web Audio API) =====
 // 多层泛音叠加，模拟寺庙钟声 / singing bowl
-class BreathAudio {
   constructor() {
     this.ctx = null;
     this.timer = null;
@@ -613,7 +606,6 @@ class BreathAudio {
   }
 }
 
-const breathAudio = new BreathAudio();
 
 
 
@@ -731,31 +723,39 @@ function runFlow(stepIndex, huatouText) {
 
   if (step.breath) {
     // 呼吸音效 - 交替吸气/呼气
-    breathAudio.init();
     const breathStart = Date.now();
     const breathInterval = setInterval(() => {
       const elapsed = (Date.now() - breathStart) / 1000;
       if (elapsed >= step.duration) { clearInterval(breathInterval); return; }
       if (Math.floor(elapsed * 2) % 2 === 0) {
-        breathAudio.inhale();
       } else {
-        breathAudio.exhale();
       }
     }, 500);
     // 步骤结束时清除
     window._breathInterval = breathInterval;
 
     // 启动呼吸音效
-    breathAudio.start();
 
-    // 呼吸动画
+    // 呼吸动画：吸/呼文字循环切换，4秒一换
     const circle = document.createElement('div');
     circle.className = 'breath-circle';
     const label = document.createElement('div');
     label.className = 'breath-label';
-    label.textContent = '吸 · 呼';
+    label.textContent = '吸';
     circle.appendChild(label);
     contentEl.appendChild(circle);
+
+    // 圆圈初始状态
+    circle.style.transform = 'scale(1)';
+    circle.style.transition = 'transform 3.8s ease-in-out';
+
+    // 每4秒切换吸/呼，圆圈配合缩放
+    let _bp = 0; // 0=吸 1=呼
+    window._breathTimer = setInterval(() => {
+      _bp = 1 - _bp;
+      label.textContent = _bp === 0 ? '吸' : '呼';
+      circle.style.transform = _bp === 0 ? 'scale(1)' : 'scale(1.25)';
+    }, 4000);
 
     const hint1 = document.createElement('div');
     hint1.className = 'line';
@@ -817,7 +817,6 @@ function runFlow(stepIndex, huatouText) {
     if (remaining <= 0) {
       clearInterval(timerInterval);
       clearInterval(window._breathInterval);
-      breathAudio.stop();
       countdownEl.textContent = '';
       // 淡出当前步骤
       contentEl.style.opacity = '0';
@@ -833,7 +832,6 @@ function runFlow(stepIndex, huatouText) {
 function finishPractice() {
   clearInterval(timerInterval);
   clearInterval(window._breathInterval);
-  breathAudio.stop();
   saveRecord(currentScene, currentHuatouId);
 
   const streak = getStreak();
@@ -849,7 +847,6 @@ function finishPractice() {
 document.querySelectorAll('.scene-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     // 提前初始化 AudioContext（需用户手势才能启动）
-    breathAudio.init();
     startPractice(btn.dataset.scene);
   });
 });
