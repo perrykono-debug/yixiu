@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>一休 · 一分钟清明</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;400;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f5f0e8;
+    --mist: #c8c0b4;
+    --breath: #3a3a3a;
+    --fade: 0.8s;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Serif SC', serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100dvh;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ===== 首页 ===== */
+  #home {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 2rem;
+  }
+
+  #home .title {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 2.8rem;
+    letter-spacing: 0.5em;
+    margin-bottom: 0.5rem;
+    opacity: 0;
+    animation: fadeUp 1.2s ease forwards;
+  }
+
+  #home .subtitle {
+    font-size: 0.85rem;
+    color: var(--mist);
+    letter-spacing: 0.3em;
+    margin-bottom: 3rem;
+    opacity: 0;
+    animation: fadeUp 1.2s ease 0.3s forwards;
+  }
+
+  .scene-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .scene-btn {
+    background: transparent;
+    border: 1px solid var(--mist);
+    padding: 1rem 1.5rem;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.05rem;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all var(--fade) ease;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards;
+  }
+  .scene-btn:nth-child(1) { animation-delay: 0.5s; }
+  .scene-btn:nth-child(2) { animation-delay: 0.6s; }
+  .scene-btn:nth-child(3) { animation-delay: 0.7s; }
+  .scene-btn:nth-child(4) { animation-delay: 0.8s; }
+  .scene-btn:nth-child(5) { animation-delay: 0.9s; }
+
+  .scene-btn .emoji { font-size: 1.3rem; }
+  .scene-btn .label { flex: 1; text-align: left; }
+  .scene-btn .arrow {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: all 0.4s ease;
+    color: var(--mist);
+  }
+
+  .scene-btn:active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .scene-btn:active .arrow {
+    opacity: 1;
+    transform: translateX(0);
+    color: var(--paper);
+  }
+
+  /* ===== 练习页 ===== */
+  #practice {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 2rem;
+    position: relative;
+  }
+
+  #practice .back-btn {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    background: none;
+    border: none;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.85rem;
+    color: var(--mist);
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: color 0.3s;
+  }
+  #practice .back-btn:active { color: var(--ink); }
+
+  .step-name {
+    font-size: 0.75rem;
+    letter-spacing: 0.4em;
+    color: var(--mist);
+    margin-bottom: 2rem;
+  }
+
+  .step-content {
+    text-align: center;
+    max-width: 300px;
+  }
+
+  .step-content .line {
+    font-size: 1.2rem;
+    line-height: 2.2;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.8s ease;
+  }
+  .step-content .line.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .step-content .huatou-text {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 1.6rem;
+    line-height: 2;
+    margin: 1rem 0;
+  }
+
+  .step-content .hint {
+    font-size: 0.85rem;
+    color: var(--mist);
+    margin-top: 1.5rem;
+  }
+
+  /* 倒计时 */
+  .countdown {
+    position: absolute;
+    bottom: 3rem;
+    font-size: 3.5rem;
+    font-weight: 200;
+    color: var(--mist);
+    opacity: 0.6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 呼吸动画 */
+  .breath-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 1px solid var(--mist);
+    margin: 2rem auto;
+    animation: breathe 6s ease-in-out infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .breath-label {
+    font-size: 0.85rem;
+    color: var(--mist);
+    letter-spacing: 0.3em;
+    animation: breathLabel 6s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(0.8); opacity: 0.4; }
+    50% { transform: scale(1.2); opacity: 1; }
+  }
+
+  @keyframes breathLabel {
+    0%, 45% { opacity: 1; }
+    46%, 95% { opacity: 0; }
+    96%, 100% { opacity: 1; }
+  }
+
+  /* 进度条 */
+  .progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: var(--ink);
+    transition: width 0.1s linear;
+  }
+
+  /* ===== 完成页 ===== */
+  #complete {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 2rem;
+  }
+
+  #complete .check-mark {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--mist);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards;
+  }
+
+  #complete .done-text {
+    font-size: 1.1rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.5rem;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.3s forwards;
+  }
+
+  #complete .streak-text {
+    font-size: 0.8rem;
+    color: var(--mist);
+    margin-bottom: 3rem;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.5s forwards;
+  }
+
+  #complete .return-btn {
+    background: none;
+    border: 1px solid var(--mist);
+    padding: 0.8rem 2rem;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.3s;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.7s forwards;
+  }
+  #complete .return-btn:active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* ===== 记录页 ===== */
+  #records {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 2rem;
+  }
+
+  #records .streak-number {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  #records .streak-label {
+    font-size: 0.8rem;
+    color: var(--mist);
+    letter-spacing: 0.2em;
+    margin-bottom: 2rem;
+  }
+
+  #records .total-text {
+    font-size: 0.85rem;
+    color: var(--mist);
+    margin-bottom: 3rem;
+  }
+
+  #records .back-home {
+    background: none;
+    border: 1px solid var(--mist);
+    padding: 0.8rem 2rem;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  #records .back-home:active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* 底部导航 */
+  .nav-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    padding: 1rem;
+    background: linear-gradient(transparent, var(--paper) 30%);
+  }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.75rem;
+    color: var(--mist);
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    padding: 0.5rem;
+    transition: color 0.3s;
+  }
+  .nav-btn.active { color: var(--ink); }
+
+  /* ===== 动画 ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== 安全提示 ===== */
+  .safety-note {
+    position: fixed;
+    bottom: 3.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    color: var(--mist);
+    opacity: 0.5;
+    text-align: center;
+    max-width: 280px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- 首页 -->
+<section id="home">
+  <div class="title">一休</div>
+  <div class="subtitle">一念之间 · 休即菩提</div>
+  <div class="scene-list">
+    <button class="scene-btn" data-scene="anxiety">
+      <span class="emoji">😰</span>
+      <span class="label">焦虑了</span>
+      <span class="arrow">→</span>
+    </button>
+    <button class="scene-btn" data-scene="overthinking">
+      <span class="emoji">🤯</span>
+      <span class="label">想太多</span>
+      <span class="arrow">→</span>
+    </button>
+    <button class="scene-btn" data-scene="decision">
+      <span class="emoji">🤔</span>
+      <span class="label">不知道怎么选</span>
+      <span class="arrow">→</span>
+    </button>
+    <button class="scene-btn" data-scene="emotion">
+      <span class="emoji">😡</span>
+      <span class="label">情绪上来了</span>
+      <span class="arrow">→</span>
+    </button>
+    <button class="scene-btn" data-scene="free">
+      <span class="emoji">🌱</span>
+      <span class="label">自由练习</span>
+      <span class="arrow">→</span>
+    </button>
+  </div>
+</section>
+
+<!-- 练习页 -->
+<section id="practice">
+  <button class="back-btn" id="backBtn">← 返回</button>
+  <div class="step-name" id="stepName"></div>
+  <div class="step-content" id="stepContent"></div>
+  <div class="countdown" id="countdown"></div>
+  <div class="progress" id="progress"></div>
+</section>
+
+<!-- 完成页 -->
+<section id="complete">
+  <div class="check-mark">✓</div>
+  <div class="done-text">我看见了</div>
+  <div class="streak-text" id="streakText"></div>
+  <button class="return-btn" id="returnBtn">继续</button>
+</section>
+
+<!-- 记录页 -->
+<section id="records">
+  <div class="streak-number" id="streakNumber">0</div>
+  <div class="streak-label">连续天数</div>
+  <div class="total-text" id="totalText">共练习 0 次</div>
+  <button class="back-home" id="recordsBack">返回首页</button>
+</section>
+
+<!-- 底部导航 -->
+<div class="nav-bottom" id="navBottom">
+  <button class="nav-btn active" data-page="home">首页</button>
+  <button class="nav-btn" data-page="records">我的</button>
+</div>
+
+<!-- 安全提示 -->
+<div class="safety-note">本工具不替代专业心理咨询，如有严重困扰请寻求专业帮助</div>
+
+<script>
+// ===== 数据 =====
+const HUATOU_TEMPLATES = [
+  // 我执 (15)
+  { id:"who_001", template:"谁在{emotion}？", attachment_type:"我执", level:"轻", scene:["anxiety","anger","sadness"] },
+  { id:"who_002", template:"「{emotion}的人」住在哪里？", attachment_type:"我执", level:"中", scene:["anxiety","anger"] },
+  { id:"who_003", template:"如果不讲故事，{emotion}还在吗？", attachment_type:"我执", level:"中", scene:["anxiety","sadness"] },
+  { id:"who_004", template:"「我」需要被保护吗？", attachment_type:"我执", level:"重", scene:["fear","shame"] },
+  { id:"who_005", template:"谁知道你在想？", attachment_type:"我执", level:"重", scene:["overthinking"] },
+  { id:"who_006", template:"听得到声音，听的那个人在哪里？", attachment_type:"我执", level:"中", scene:["confusion","loneliness"] },
+  { id:"who_007", template:"如果不回忆，你是谁？", attachment_type:"我执", level:"重", scene:["regret","grief"] },
+  { id:"who_008", template:"「选的人」若存在，他住在你身体的哪里？", attachment_type:"我执", level:"重", scene:["decision"] },
+  { id:"who_009", template:"谁在受害？", attachment_type:"我执", level:"中", scene:["anger","judgment"] },
+  { id:"who_010", template:"「我」在身体里面，还是外面？", attachment_type:"我执", level:"重", scene:["confusion","pain"] },
+  { id:"who_011", template:"谁在说「不知道」？", attachment_type:"我执", level:"中", scene:["confusion","decision"] },
+  { id:"who_012", template:"「焦虑的人」有形状吗？", attachment_type:"我执", level:"中", scene:["anxiety"] },
+  { id:"who_013", template:"谁在比较？", attachment_type:"我执", level:"轻", scene:["comparison"] },
+  { id:"who_014", template:"「我」需要被证明吗？", attachment_type:"我执", level:"重", scene:["shame","judgment"] },
+  { id:"who_015", template:"谁在等？", attachment_type:"我执", level:"中", scene:["waiting","delay"] },
+  // 法执 (10)
+  { id:"narrative_001", template:"{emotion}需要一个「我」吗？", attachment_type:"法执", level:"中", scene:["anxiety","anger"] },
+  { id:"narrative_002", template:"你在讲故事，还是故事在讲你？", attachment_type:"法执", level:"重", scene:["regret","overthinking"] },
+  { id:"narrative_003", template:"「应该」从哪里来？", attachment_type:"法执", level:"中", scene:["pressure","control"] },
+  { id:"narrative_004", template:"如果不想，会怎样？", attachment_type:"法执", level:"轻", scene:["overthinking","procrastination"] },
+  { id:"narrative_005", template:"下一个念头，从哪里来？", attachment_type:"法执", level:"重", scene:["overthinking"] },
+  { id:"narrative_006", template:"「必须」是真的吗？", attachment_type:"法执", level:"中", scene:["pressure","control"] },
+  { id:"narrative_007", template:"你在解决问题，还是在解决问题的人？", attachment_type:"法执", level:"重", scene:["anxiety","confusion"] },
+  { id:"narrative_008", template:"「我」的故事，需要被继续吗？", attachment_type:"法执", level:"中", scene:["regret","grief"] },
+  { id:"narrative_009", template:"如果不记录，刚才想了什么？", attachment_type:"法执", level:"中", scene:["overthinking","fatigue"] },
+  { id:"narrative_010", template:"「对」和「错」，谁定义的？", attachment_type:"法执", level:"重", scene:["decision","judgment"] },
+  // 时间执 (10)
+  { id:"time_001", template:"{time_word}的你，在哪里？", attachment_type:"时间执", level:"中", scene:["regret","fear"] },
+  { id:"time_002", template:"三秒前，你在{emotion}吗？", attachment_type:"时间执", level:"轻", scene:["anxiety","anger"] },
+  { id:"time_003", template:"如果不记录，刚才发生了什么？", attachment_type:"时间执", level:"中", scene:["overthinking","regret"] },
+  { id:"time_004", template:"此刻，有什么问题吗？", attachment_type:"时间执", level:"重", scene:["confusion","pressure"] },
+  { id:"time_005", template:"「未来」在空间的哪个位置？", attachment_type:"时间执", level:"重", scene:["fear","waiting"] },
+  { id:"time_006", template:"过去的心，现在还在吗？", attachment_type:"时间执", level:"中", scene:["regret","grief"] },
+  { id:"time_007", template:"「现在」有多长？", attachment_type:"时间执", level:"重", scene:["confusion","overthinking"] },
+  { id:"time_008", template:"呼吸的，是谁？", attachment_type:"时间执", level:"轻", scene:["anxiety","fatigue"] },
+  { id:"time_009", template:"「我」从什么时候开始存在？", attachment_type:"时间执", level:"重", scene:["confusion","shame"] },
+  { id:"time_010", template:"此刻，除了这个感觉，还有什么？", attachment_type:"时间执", level:"轻", scene:["anxiety","sadness"] },
+  // 情绪执 (8)
+  { id:"emotion_001", template:"情绪和身体，哪个是你？", attachment_type:"情绪执", level:"中", scene:["anger","pain"] },
+  { id:"emotion_002", template:"生气需要你同意吗？", attachment_type:"情绪执", level:"中", scene:["anger"] },
+  { id:"emotion_003", template:"情绪有颜色吗？有形状吗？", attachment_type:"情绪执", level:"轻", scene:["anxiety","sadness"] },
+  { id:"emotion_004", template:"「你的」情绪，在哪里结束？", attachment_type:"情绪执", level:"重", scene:["anger","judgment"] },
+  { id:"emotion_005", template:"情绪升起之前，心是什么？", attachment_type:"情绪执", level:"重", scene:["anger","anxiety"] },
+  { id:"emotion_006", template:"如果情绪不归你，它归谁？", attachment_type:"情绪执", level:"中", scene:["sadness","fear"] },
+  { id:"emotion_007", template:"看着情绪的，是情绪吗？", attachment_type:"情绪执", level:"重", scene:["overthinking","confusion"] },
+  { id:"emotion_008", template:"「我」是情绪，还是知道情绪的？", attachment_type:"情绪执", level:"重", scene:["anxiety","anger","sadness"] },
+  // 直指 (5)
+  { id:"direct_001", template:"什么从未改变？", attachment_type:"直指", level:"重", scene:["anxiety","confusion","grief"] },
+  { id:"direct_002", template:"这个觉知，有没有起点？", attachment_type:"直指", level:"重", scene:["confusion","overthinking"] },
+  { id:"direct_003", template:"知道痛的那个，痛吗？", attachment_type:"直指", level:"重", scene:["pain","grief"] },
+  { id:"direct_004", template:"念头生灭之间，有什么？", attachment_type:"直指", level:"重", scene:["overthinking","confusion"] },
+  { id:"direct_005", template:"「我」出现之前，世界是什么？", attachment_type:"直指", level:"重", scene:["confusion","fear"] }
+];
+
+const DAILY_HUATOU = [
+  { day:1, huatou:"是谁在着急？" },
+  { day:2, huatou:"谁在比较？" },
+  { day:3, huatou:"谁想证明自己？" },
+  { day:4, huatou:"若无人评价你，你会怎样活？" },
+  { day:5, huatou:"什么是真正重要的？" },
+  { day:6, huatou:"呼吸的，是谁？" },
+  { day:7, huatou:"什么从未改变？" }
+];
+
+const SCENES = {
+  anxiety:      { tags:["anxiety","fear"],        emotion:"焦虑" },
+  overthinking: { tags:["overthinking"],           emotion:"想" },
+  decision:     { tags:["decision","confusion","comparison"], emotion:"困惑" },
+  emotion:      { tags:["anger","sadness","judgment","shame","pain"], emotion:"生气" },
+  free:         { tags:[],                         emotion:"焦虑" }
+};
+
+const FLOW = [
+  { id:"stop",    name:"停",   duration:10, lines:["放下手机","坐直","看一眼自己"] },
+  { id:"breathe", name:"呼吸", duration:30, lines:["知道自己正在吸气","知道自己正在呼气"], breath:true },
+  { id:"huatou",  name:"话头", duration:20, lines:null, huatou:true, hint:["不要回答","只是问"] },
+  { id:"return",  name:"回",   duration:10, lines:["我看见了","继续"] }
+];
+
+const TIME_MAP = { regret:"过去", fear:"未来", waiting:"等待" };
+
+// ===== 话头引擎 =====
+function pickHuatou(sceneId) {
+  if (sceneId === 'free') {
+    // 今日话头
+    const day = new Date().getDay() || 7;
+    return DAILY_HUATOU.find(d => d.day === day).huatou;
+  }
+
+  const cfg = SCENES[sceneId];
+  const matched = HUATOU_TEMPLATES.filter(t =>
+    t.scene.some(s => cfg.tags.includes(s))
+  );
+
+  if (matched.length === 0) {
+    return "谁在？";
+  }
+
+  const tpl = matched[Math.floor(Math.random() * matched.length)];
+  let text = tpl.template;
+  text = text.replace(/\{emotion\}/g, cfg.emotion);
+  text = text.replace(/\{time_word\}/g, TIME_MAP[cfg.tags[0]] || "过去");
+  return text;
+}
+
+// ===== 练习记录 =====
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem('now_zen_records') || '[]'); }
+  catch { return []; }
+}
+
+function saveRecord(scene, huatouId) {
+  const records = getRecords();
+  records.push({
+    date: new Date().toISOString().slice(0,10),
+    scene,
+    huatou_id: huatouId,
+    completed: true
+  });
+  localStorage.setItem('now_zen_records', JSON.stringify(records));
+}
+
+function getStreak() {
+  const records = getRecords();
+  const days = [...new Set(records.map(r => r.date))].sort().reverse();
+  if (days.length === 0) return 0;
+
+  let streak = 1;
+  const today = new Date().toISOString().slice(0,10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+
+  if (days[0] !== today && days[0] !== yesterday) return 0;
+  if (days[0] === yesterday) { /* count from yesterday */ }
+
+  for (let i = 1; i < days.length; i++) {
+    const prev = new Date(days[i-1]);
+    const curr = new Date(days[i]);
+    const diff = (prev - curr) / 86400000;
+    if (diff === 1) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// ===== UI 控制 =====
+let currentScene = null;
+let currentHuatouId = null;
+let timerInterval = null;
+
+function showPage(id) {
+  ['home','practice','complete','records'].forEach(p => {
+    document.getElementById(p).style.display = 'none';
+  });
+  document.getElementById(id).style.display = 'flex';
+
+  const nav = document.getElementById('navBottom');
+  nav.style.display = (id === 'home' || id === 'records') ? 'flex' : 'none';
+
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === id || (id === 'home' && b.dataset.page === 'home'));
+  });
+}
+
+function startPractice(sceneId) {
+  currentScene = sceneId;
+  const huatouText = pickHuatou(sceneId);
+  currentHuatouId = huatouText; // for record
+
+  showPage('practice');
+  runFlow(0, huatouText);
+}
+
+function runFlow(stepIndex, huatouText) {
+  if (stepIndex >= FLOW.length) {
+    finishPractice();
+    return;
+  }
+
+  const step = FLOW[stepIndex];
+  const stepNameEl = document.getElementById('stepName');
+  const contentEl = document.getElementById('stepContent');
+  const countdownEl = document.getElementById('countdown');
+  const progressEl = document.getElementById('progress');
+
+  stepNameEl.textContent = step.name;
+  contentEl.innerHTML = '';
+  countdownEl.textContent = '';
+
+  // 计算总时间（用于进度条）
+  const totalDuration = FLOW.reduce((s,f) => s + f.duration, 0);
+  const elapsed = FLOW.slice(0, stepIndex).reduce((s,f) => s + f.duration, 0);
+  progressEl.style.width = ((elapsed / totalDuration) * 100) + '%';
+
+  if (step.breath) {
+    // 呼吸动画
+    const circle = document.createElement('div');
+    circle.className = 'breath-circle';
+    const label = document.createElement('div');
+    label.className = 'breath-label';
+    label.textContent = '吸 · 呼';
+    circle.appendChild(label);
+    contentEl.appendChild(circle);
+
+    const hint1 = document.createElement('div');
+    hint1.className = 'line';
+    hint1.textContent = step.lines[0];
+    contentEl.appendChild(hint1);
+    setTimeout(() => hint1.classList.add('visible'), 300);
+
+    const hint2 = document.createElement('div');
+    hint2.className = 'line';
+    hint2.textContent = step.lines[1];
+    contentEl.appendChild(hint2);
+    setTimeout(() => hint2.classList.add('visible'), 600);
+  } else if (step.huatou) {
+    // 话头
+    const huatouEl = document.createElement('div');
+    huatouEl.className = 'huatou-text line';
+    huatouEl.textContent = huatouText;
+    contentEl.appendChild(huatouEl);
+    setTimeout(() => huatouEl.classList.add('visible'), 500);
+
+    step.hint.forEach(h => {
+      const hintEl = document.createElement('div');
+      hintEl.className = 'hint line';
+      hintEl.textContent = h;
+      contentEl.appendChild(hintEl);
+      setTimeout(() => hintEl.classList.add('visible'), 1200);
+    });
+  } else {
+    // 普通文字
+    step.lines.forEach((line, i) => {
+      const lineEl = document.createElement('div');
+      lineEl.className = 'line';
+      lineEl.textContent = line;
+      contentEl.appendChild(lineEl);
+      setTimeout(() => lineEl.classList.add('visible'), 300 + i * 400);
+    });
+  }
+
+  // 倒计时
+  let remaining = step.duration;
+  countdownEl.textContent = remaining;
+
+  clearInterval(timerInterval);
+  const startTime = Date.now();
+
+  timerInterval = setInterval(() => {
+    const elapsedMs = Date.now() - startTime;
+    const elapsedSec = Math.floor(elapsedMs / 1000);
+    remaining = Math.max(0, step.duration - elapsedSec);
+
+    if (remaining > 0) {
+      countdownEl.textContent = remaining;
+    }
+
+    // 进度条
+    const currentElapsed = FLOW.slice(0, stepIndex).reduce((s,f) => s + f.duration, 0) + (elapsedMs / 1000);
+    progressEl.style.width = Math.min(100, (currentElapsed / totalDuration) * 100) + '%';
+
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      countdownEl.textContent = '';
+      // 淡出当前步骤
+      contentEl.style.opacity = '0';
+      contentEl.style.transition = 'opacity 0.5s';
+      setTimeout(() => {
+        contentEl.style.opacity = '1';
+        runFlow(stepIndex + 1, huatouText);
+      }, 500);
+    }
+  }, 100);
+}
+
+function finishPractice() {
+  clearInterval(timerInterval);
+  saveRecord(currentScene, currentHuatouId);
+
+  const streak = getStreak();
+  const records = getRecords();
+
+  document.getElementById('streakText').textContent =
+    streak > 0 ? `连续 ${streak} 天` : '今天第一次';
+
+  showPage('complete');
+}
+
+// ===== 事件绑定 =====
+document.querySelectorAll('.scene-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    startPractice(btn.dataset.scene);
+  });
+});
+
+document.getElementById('backBtn').addEventListener('click', () => {
+  clearInterval(timerInterval);
+  showPage('home');
+});
+
+document.getElementById('returnBtn').addEventListener('click', () => {
+  showPage('home');
+});
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.page === 'records') {
+      const streak = getStreak();
+      const records = getRecords();
+      document.getElementById('streakNumber').textContent = streak;
+      document.getElementById('totalText').textContent = `共练习 ${records.length} 次`;
+      showPage('records');
+    } else {
+      showPage('home');
+    }
+  });
+});
+
+document.getElementById('recordsBack').addEventListener('click', () => {
+  showPage('home');
+});
+
+// 初始显示首页
+showPage('home');
+</script>
+</body>
+</html>
