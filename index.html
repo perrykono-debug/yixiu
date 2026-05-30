@@ -536,92 +536,73 @@ const FLOW = [
 const TIME_MAP = { regret:"过去", fear:"未来", waiting:"等待" };
 
 // ===== 呼吸音效引擎 (Web Audio API) =====
-// 极低频稳态音，像远处的海浪/大地共振，不干扰
+// Apple Watch 正念风格：吸气/呼气转换时短促钟声
 class BreathAudio {
   constructor() {
     this.ctx = null;
-    this.osc1 = null;
-    this.osc2 = null;
-    this.gain1 = null;
-    this.gain2 = null;
     this.timer = null;
   }
 
+  // 初始化 AudioContext（需在用户手势中调用）
   init() {
     if (this.ctx) { try { this.ctx.resume(); } catch(e){} return; }
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // 双振荡器轻微失谐 → 产生温暖"拍频"，像远处的嗡鸣
-    this.osc1 = this.ctx.createOscillator();
-    this.osc1.type = 'sine';
-    this.osc1.frequency.value = 64; // C2 极低频
-
-    this.osc2 = this.ctx.createOscillator();
-    this.osc2.type = 'sine';
-    this.osc2.frequency.value = 64.4; // 轻微失谐，产生 0.4Hz 拍频
-
-    this.gain1 = this.ctx.createGain();
-    this.gain1.gain.value = 0;
-    this.gain2 = this.ctx.createGain();
-    this.gain2.gain.value = 0;
-
-    this.osc1.connect(this.gain1);
-    this.osc2.connect(this.gain2);
-    this.gain1.connect(this.ctx.destination);
-    this.gain2.connect(this.ctx.destination);
-    this.osc1.start();
-    this.osc2.start();
   }
 
+  // 播放一声轻柔钟声（FM 合成，像玻璃/金属轻击）
+  playBell() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // FM 合成：调制器 → 载波，产生钟声质感
+    const carrier = this.ctx.createOscillator();
+    const modulator = this.ctx.createOscillator();
+    const modGain = this.ctx.createGain();
+    const carrierGain = this.ctx.createGain();
+
+    carrier.type = "sine";
+    carrier.frequency.value = 880; // A5，清脆但不刺耳
+    modulator.type = "sine";
+    modulator.frequency.value = 440; // 调制频率
+    modGain.gain.value = 200; // 调制深度，决定音色亮度
+
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+
+    carrier.connect(carrierGain);
+    carrierGain.connect(this.ctx.destination);
+
+    // 音量包络：快速起音，缓慢衰减 → 像钟声
+    carrierGain.gain.setValueAtTime(0, now);
+    carrierGain.gain.linearRampToValueAtTime(0.06, now + 0.01);  // 快速起音
+    carrierGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8); // 缓慢衰减
+
+    carrier.start(now);
+    modulator.start(now);
+    carrier.stop(now + 2);
+    modulator.stop(now + 2);
+  }
+
+  // 开始呼吸引导：每 4 秒交替吸气/呼气提示音
   start() {
     this.init();
     if (this.timer) return;
-    const now = this.ctx.currentTime;
-
-    // 极轻柔淡入（3秒内）
-    this.gain1.gain.cancelScheduledValues(now);
-    this.gain1.gain.setValueAtTime(this.gain1.gain.value, now);
-    this.gain1.gain.linearRampToValueAtTime(0.008, now + 3);
-    this.gain2.gain.cancelScheduledValues(now);
-    this.gain2.gain.setValueAtTime(this.gain2.gain.value, now);
-    this.gain2.gain.linearRampToValueAtTime(0.006, now + 3);
-
-    // 极缓慢音量起伏（呼吸感），周期10秒
-    let t = 0;
-    this.timer = setInterval(() => {
-      if (!this.ctx) { clearInterval(this.timer); return; }
-      const now2 = this.ctx.currentTime;
-      // 两个增益微微错相，增强"呼吸"感
-      const v1 = 0.008 + 0.003 * Math.sin(t);
-      const v2 = 0.006 + 0.002 * Math.sin(t + 1.2);
-      this.gain1.gain.cancelScheduledValues(now2);
-      this.gain1.gain.setValueAtTime(this.gain1.gain.value, now2);
-      this.gain1.gain.linearRampToValueAtTime(v1, now2 + 1);
-      this.gain2.gain.cancelScheduledValues(now2);
-      this.gain2.gain.setValueAtTime(this.gain2.gain.value, now2);
-      this.gain2.gain.linearRampToValueAtTime(v2, now2 + 1);
-      t += 0.6;
-    }, 1000);
+    let inhaling = true;
+    const cue = () => {
+      this.playBell();
+      inhaling = !inhaling;
+    };
+    cue(); // 立即响第一声
+    this.timer = setInterval(cue, 4000); // 每 4 秒提示一次（吸/呼各约 4 秒）
   }
 
   stop() {
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    if (this.gain1) {
-      this.gain1.gain.cancelScheduledValues(now);
-      this.gain1.gain.setValueAtTime(this.gain1.gain.value, now);
-      this.gain1.gain.linearRampToValueAtTime(0, now + 3);
-    }
-    if (this.gain2) {
-      this.gain2.gain.cancelScheduledValues(now);
-      this.gain2.gain.setValueAtTime(this.gain2.gain.value, now);
-      this.gain2.gain.linearRampToValueAtTime(0, now + 3);
-    }
   }
 }
 
 const breathAudio = new BreathAudio();
+
 
 // ===== 话头引擎 =====
 function pickHuatou(sceneId) {
