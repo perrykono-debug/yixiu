@@ -156,9 +156,17 @@
 
   .step-content .huatou-text {
     font-family: 'ZCOOL XiaoWei', serif;
-    font-size: 1.6rem;
+    font-size: 2.2rem;
     line-height: 2;
-    margin: 1rem 0;
+    margin: 1.5rem 0;
+    color: var(--ink);
+    text-align: center;
+    animation: huatouPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes huatouPulse {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.03); opacity: 1; }
   }
 
   .step-content .hint {
